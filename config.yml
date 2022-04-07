@@ -1,0 +1,7 @@
+---
+user_api:
+  address: users_api:8080
+order_api:
+  address: orders_api:8080
+app_api:
+  bind: :8080
