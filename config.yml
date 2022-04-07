@@ -1,9 +1,7 @@
 ---
 user_api:
-  host: users_api
-  port: 8080
+  address: users_api:8080
 order_api:
-  host: orders_api
-  port: 8080
+  address: orders_api:8080
 app_api:
   bind: :8080

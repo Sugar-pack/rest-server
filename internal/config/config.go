@@ -11,19 +11,14 @@ type API struct {
 	Bind string `mapstructure:"bind"`
 }
 
-type Address struct {
-	Host string `mapstructure:"host"`
-	Port string `mapstructure:"port"`
-}
-
-func (a *Address) GetAddress() string {
-	return fmt.Sprintf("%s:%s", a.Host, a.Port)
+type Service struct {
+	Address string `mapstructure:"address"`
 }
 
 // Config is a container for handler config.
 type Config struct {
-	User  *Address `mapstructure:"user_api"`
-	Order *Address `mapstructure:"order_api"`
+	User  *Service `mapstructure:"user_api"`
+	Order *Service `mapstructure:"order_api"`
 	App   *API     `mapstructure:"app_api"`
 }
 
