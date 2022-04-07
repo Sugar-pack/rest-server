@@ -32,7 +32,7 @@ services:
       POSTGRES_USER: user_db
       POSTGRES_DB: users_db
       POSTGRES_HOST_AUTH_METHOD: trust
-  order_api:
+  orders_api:
     build: https://github.com/Sugar-pack/orders-manager.git#main
     ports:
       - "8081:8080"

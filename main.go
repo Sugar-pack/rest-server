@@ -31,7 +31,7 @@ func main() {
 		return
 	}
 
-	userConn, err := grpc.Dial(appConfig.User.Bind, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	userConn, err := grpc.Dial(appConfig.User.GetAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 
@@ -44,7 +44,7 @@ func main() {
 		}
 	}(userConn)
 
-	orderConn, err := grpc.Dial(appConfig.Order.Bind, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	orderConn, err := grpc.Dial(appConfig.Order.GetAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 

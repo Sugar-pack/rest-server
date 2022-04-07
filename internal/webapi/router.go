@@ -9,7 +9,7 @@ func CreateRouter(logger logging.Logger, handler *Handler) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(LoggingMiddleware(logger))
 
-	router.Post("send", handler.SendMessage)
+	router.Post("/send", handler.SendMessage)
 
 	return router
 }
