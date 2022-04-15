@@ -6,4 +6,4 @@ order_api:
 app_api:
   bind: :8080
 server:
-  shutdown_timeout: 5
+  shutdown_timeout: 5m

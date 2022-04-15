@@ -8,14 +8,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/Sugar-pack/users-manager/pkg/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/Sugar-pack/rest-server/docs"
-	_ "github.com/Sugar-pack/rest-server/docs"
 	"github.com/Sugar-pack/rest-server/internal/config"
 	"github.com/Sugar-pack/rest-server/internal/webapi"
 )
@@ -35,7 +33,7 @@ func main() {
 		return
 	}
 	docs.SwaggerInfo.Host = appConfig.App.Bind
-	shutdownTime := time.Duration(appConfig.Server.ShutdownTimeout) * time.Minute
+	shutdownTime := appConfig.Server.ShutdownTimeout
 
 	userConn, err := grpc.Dial(appConfig.User.Address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {

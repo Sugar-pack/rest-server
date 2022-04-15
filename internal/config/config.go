@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -16,7 +17,7 @@ type Service struct {
 }
 
 type Server struct {
-	ShutdownTimeout int `mapstructure:"shutdown_timeout"` // in minutes
+	ShutdownTimeout time.Duration `mapstructure:"shutdown_timeout"`
 }
 
 // Config is a container for handler config.
