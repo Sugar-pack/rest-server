@@ -10,12 +10,12 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/Sugar-pack/rest-server/docs"
+	"github.com/Sugar-pack/rest-server/internal/config"
+	"github.com/Sugar-pack/rest-server/internal/webapi"
 	"github.com/Sugar-pack/users-manager/pkg/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-
-	"github.com/Sugar-pack/rest-server/internal/config"
-	"github.com/Sugar-pack/rest-server/internal/webapi"
 )
 
 const shutdownTime = 5 * time.Minute

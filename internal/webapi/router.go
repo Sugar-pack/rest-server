@@ -12,7 +12,7 @@ func CreateRouter(logger logging.Logger, handler *Handler) *chi.Mux {
 
 	router.Post("/send", handler.SendMessage)
 	router.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("http://localhost:1323/swagger/doc.json"), //The url pointing to API definition
+		httpSwagger.URL("/swagger/doc.json"),
 	))
 
 	return router

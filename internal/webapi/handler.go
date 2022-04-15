@@ -47,11 +47,7 @@ type Message struct {
 // @Produce      json
 // @Param        message body Message true "Message"
 // @Success      200  {string} string	"ok"
-// @Failure      400  {object}  httputil.HTTPError
-// @Failure      404  {object}  httputil.HTTPError
-// @Failure      500  {object}  httputil.HTTPError
-// @Router       /send/ [get]
-
+// @Router       /send [get].
 func (h *Handler) SendMessage(writer http.ResponseWriter, request *http.Request) {
 	ctx := request.Context()
 	logger := logging.FromContext(ctx)
