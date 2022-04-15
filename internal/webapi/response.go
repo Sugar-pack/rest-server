@@ -34,8 +34,9 @@ func StatusOk(ctx context.Context, writer http.ResponseWriter, s string) {
 	}
 }
 
-func StatusAccepted(ctx context.Context, writer http.ResponseWriter, s string) {
+func StatusAccepted(ctx context.Context, writer http.ResponseWriter, s, backgroundID string) {
 	logger := logging.FromContext(ctx)
+	writer.Header().Add("x-background-id", backgroundID)
 	writer.WriteHeader(http.StatusAccepted)
 	_, wErr := writer.Write([]byte(s))
 	if wErr != nil {

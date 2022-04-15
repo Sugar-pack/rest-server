@@ -10,7 +10,7 @@ func CreateRouter(logger logging.Logger, handler *Handler) *chi.Mux {
 	router.Use(
 		LoggingMiddleware(logger),
 		WithLogRequestBoundaries(),
-		Async(),
+		Async(handler.BgResponses),
 	)
 
 	router.Post("/send", handler.SendMessage)

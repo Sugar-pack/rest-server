@@ -44,7 +44,7 @@ type asyncResponseWriter struct {
 	buf            *bytes.Buffer
 	code           int
 	responseIsSent bool
-	storage        map[uuid.UUID][]byte
+	storage        map[string][]byte
 	headers        http.Header
 }
 
@@ -56,7 +56,7 @@ func (a *asyncResponseWriter) Write(i []byte) (int, error) {
 	if !a.responseIsSent {
 		return a.buf.Write(i)
 	} else {
-		a.storage[a.id] = i
+		a.storage[a.id.String()] = i
 	}
 	return 0, nil
 }
@@ -69,9 +69,7 @@ func (a *asyncResponseWriter) WriteHeader(statusCode int) {
 	}
 }
 
-func Async() func(http.Handler) http.Handler {
-	storage := make(map[uuid.UUID][]byte)
-
+func Async(bgResponses map[string][]byte) func(http.Handler) http.Handler {
 	mw := func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
@@ -80,14 +78,14 @@ func Async() func(http.Handler) http.Handler {
 			timer := time.NewTimer(timeout)
 			timeNow := time.Now()
 			catchTimeoutCh := make(chan struct{})
-			catchResponseCh := make(chan struct{})
+			//catchResponseCh := make(chan struct{})
 			rid := uuid.New()
 			var buffBytes []byte
 			responseBuffer := bytes.NewBuffer(buffBytes)
 			headers := http.Header{}
 			aw := &asyncResponseWriter{
 				id:      rid,
-				storage: storage,
+				storage: bgResponses,
 				w:       w,
 				buf:     responseBuffer,
 				headers: headers,
@@ -105,15 +103,15 @@ func Async() func(http.Handler) http.Handler {
 
 			go func() {
 				next.ServeHTTP(aw, r)
-				select {
-				case catchResponseCh <- struct{}{}:
-				default:
-				}
+				//select {
+				//case catchResponseCh <- struct{}{}:
+				//default:
+				//}
 			}()
 			select {
 			case <-catchTimeoutCh:
-				StatusAccepted(ctx, w, "request will be executed in the background")
-			case <-catchResponseCh:
+				StatusAccepted(ctx, w, "request will be executed in the background", rid.String())
+				//case <-catchResponseCh:
 			}
 		}
 		handlerFn := http.HandlerFunc(fn)
