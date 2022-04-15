@@ -39,6 +39,19 @@ type Message struct {
 	Label string `json:"label"`
 }
 
+// SendMessage godoc
+// @Summary      Show an account
+// @Description  get string by ID
+// @Tags         accounts
+// @Accept       json
+// @Produce      json
+// @Param        message body Message true "Message"
+// @Success      200  {string} string	"ok"
+// @Failure      400  {object}  httputil.HTTPError
+// @Failure      404  {object}  httputil.HTTPError
+// @Failure      500  {object}  httputil.HTTPError
+// @Router       /send/ [get]
+
 func (h *Handler) SendMessage(writer http.ResponseWriter, request *http.Request) {
 	ctx := request.Context()
 	logger := logging.FromContext(ctx)

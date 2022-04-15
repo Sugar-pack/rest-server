@@ -11,3 +11,6 @@ vet:  ## Run go vet
 
 lint: ## Run go lint
 	golangci-lint run
+
+gen-swagger: ## Generate swagger spec
+	swag init --parseInternal
