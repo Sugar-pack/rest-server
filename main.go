@@ -10,30 +10,19 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/Sugar-pack/rest-server/docs"
-	"github.com/Sugar-pack/rest-server/internal/config"
-	"github.com/Sugar-pack/rest-server/internal/webapi"
 	"github.com/Sugar-pack/users-manager/pkg/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/Sugar-pack/rest-server/docs"
+	_ "github.com/Sugar-pack/rest-server/docs"
+	"github.com/Sugar-pack/rest-server/internal/config"
+	"github.com/Sugar-pack/rest-server/internal/webapi"
 )
 
-const shutdownTime = 5 * time.Minute
-
-// @title Swagger Example API
-// @version 1.0
-// @description This is a sample server Petstore server.
-// @termsOfService http://swagger.io/terms/
-
-// @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
-
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-
-// @host petstore.swagger.io
-// @BasePath /v2
+// @title Server Example
+// @version 0.1
+// @description This is a sample server.
 
 func main() {
 	logger := logging.GetLogger()
@@ -45,6 +34,8 @@ func main() {
 
 		return
 	}
+	docs.SwaggerInfo.Host = appConfig.App.Bind
+	shutdownTime := time.Duration(appConfig.Server.ShutdownTimeout) * time.Minute
 
 	userConn, err := grpc.Dial(appConfig.User.Address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
