@@ -5,3 +5,5 @@ order_api:
   address: orders_api:8081
 app_api:
   bind: :8080
+server:
+  shutdown_timeout: 5m
