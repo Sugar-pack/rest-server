@@ -39,13 +39,11 @@ func WithLogRequestBoundaries() func(next http.Handler) http.Handler {
 }
 
 type asyncResponseWriter struct {
-	id             uuid.UUID
-	w              http.ResponseWriter
-	buf            *bytes.Buffer
-	code           int
-	responseIsSent bool
-	storage        map[string][]byte
-	headers        http.Header
+	id      uuid.UUID
+	buf     *bytes.Buffer
+	code    int
+	headers http.Header
+	storage map[string][]byte
 }
 
 func (a *asyncResponseWriter) Header() http.Header {
@@ -53,20 +51,12 @@ func (a *asyncResponseWriter) Header() http.Header {
 }
 
 func (a *asyncResponseWriter) Write(i []byte) (int, error) {
-	if !a.responseIsSent {
-		return a.buf.Write(i)
-	} else {
-		a.storage[a.id.String()] = i
-	}
-	return 0, nil
+	a.storage[a.id.String()] = i
+	return a.buf.Write(i)
 }
 
 func (a *asyncResponseWriter) WriteHeader(statusCode int) {
-	if !a.responseIsSent {
-		a.responseIsSent = true
-		a.code = statusCode
-		//a.w.WriteHeader(statusCode)
-	}
+	a.code = statusCode
 }
 
 func Async(bgResponses map[string][]byte) func(http.Handler) http.Handler {
@@ -78,7 +68,7 @@ func Async(bgResponses map[string][]byte) func(http.Handler) http.Handler {
 			timer := time.NewTimer(timeout)
 			timeNow := time.Now()
 			catchTimeoutCh := make(chan struct{})
-			//catchResponseCh := make(chan struct{})
+			catchResponseCh := make(chan struct{})
 			rid := uuid.New()
 			var buffBytes []byte
 			responseBuffer := bytes.NewBuffer(buffBytes)
@@ -86,7 +76,6 @@ func Async(bgResponses map[string][]byte) func(http.Handler) http.Handler {
 			aw := &asyncResponseWriter{
 				id:      rid,
 				storage: bgResponses,
-				w:       w,
 				buf:     responseBuffer,
 				headers: headers,
 			}
@@ -103,15 +92,16 @@ func Async(bgResponses map[string][]byte) func(http.Handler) http.Handler {
 
 			go func() {
 				next.ServeHTTP(aw, r)
-				//select {
-				//case catchResponseCh <- struct{}{}:
-				//default:
-				//}
+				select {
+				case catchResponseCh <- struct{}{}:
+				default:
+				}
 			}()
 			select {
 			case <-catchTimeoutCh:
 				StatusAccepted(ctx, w, "request will be executed in the background", rid.String())
-				//case <-catchResponseCh:
+			case <-catchResponseCh:
+				rawResponse(ctx, w, aw.code, aw.headers, aw.buf.Bytes())
 			}
 		}
 		handlerFn := http.HandlerFunc(fn)

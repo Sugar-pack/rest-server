@@ -15,6 +15,7 @@ func CreateRouter(logger logging.Logger, handler *Handler) *chi.Mux {
 
 	router.Post("/send", handler.SendMessage)
 	router.Get("/durable", handler.Durable)
+	router.Get("/fast", handler.FastAndFurious)
 
 	return router
 }

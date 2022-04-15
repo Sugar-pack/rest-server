@@ -43,3 +43,17 @@ func StatusAccepted(ctx context.Context, writer http.ResponseWriter, s, backgrou
 		logger.WithError(wErr).Error("Error while writing response")
 	}
 }
+
+func rawResponse(ctx context.Context, w http.ResponseWriter, httpCode int, httpHeaders http.Header, body []byte) {
+	logger := logging.FromContext(ctx)
+	for k, vs := range httpHeaders {
+		for _, v := range vs {
+			w.Header().Add(k, v)
+		}
+	}
+	w.WriteHeader(httpCode)
+	_, wErr := w.Write(body)
+	if wErr != nil {
+		logger.WithError(wErr).Error("Error while writing response")
+	}
+}
