@@ -8,17 +8,19 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/Sugar-pack/users-manager/pkg/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/Sugar-pack/rest-server/docs"
 	"github.com/Sugar-pack/rest-server/internal/config"
 	"github.com/Sugar-pack/rest-server/internal/webapi"
 )
 
-const shutdownTime = 5 * time.Minute
+// @title Server Example
+// @version 0.1
+// @description This is a sample server.
 
 func main() {
 	logger := logging.GetLogger()
@@ -30,6 +32,8 @@ func main() {
 
 		return
 	}
+	docs.SwaggerInfo.Host = appConfig.App.Bind
+	shutdownTime := appConfig.Server.ShutdownTimeout
 
 	userConn, err := grpc.Dial(appConfig.User.Address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {

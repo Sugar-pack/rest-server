@@ -35,10 +35,21 @@ func NewHandler(userConn *grpc.ClientConn, orderConn *grpc.ClientConn) *Handler 
 }
 
 type Message struct {
-	Name  string `json:"name"`
-	Label string `json:"label"`
+	Name  string `json:"name" example:"John"`
+	Label string `json:"label" example:"Bag"`
 }
 
+// SendMessage godoc
+// @Summary      Send message
+// @Description  Put message with name and label to DB by 2pc transactions
+// @Tags         accounts
+// @Accept       json
+// @Produce      json
+// @Param        message body Message true "Message"
+// @Success      200  {string} string	"ok"
+// @Failure      400  {string} string	"message decode error"
+// @Failure      500  {string} string	"server error"
+// @Router       /send [post].
 func (h *Handler) SendMessage(writer http.ResponseWriter, request *http.Request) {
 	ctx := request.Context()
 	logger := logging.FromContext(ctx)
