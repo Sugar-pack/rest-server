@@ -33,3 +33,12 @@ func StatusOk(ctx context.Context, writer http.ResponseWriter, s string) {
 		logger.WithError(wErr).Error("Error while writing response")
 	}
 }
+
+func StatusAccepted(ctx context.Context, writer http.ResponseWriter, s string) {
+	logger := logging.FromContext(ctx)
+	writer.WriteHeader(http.StatusAccepted)
+	_, wErr := writer.Write([]byte(s))
+	if wErr != nil {
+		logger.WithError(wErr).Error("Error while writing response")
+	}
+}
