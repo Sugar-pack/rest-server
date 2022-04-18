@@ -12,7 +12,6 @@ import (
 
 	"github.com/Sugar-pack/users-manager/pkg/logging"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -66,10 +65,8 @@ func main() {
 	handler := webapi.NewHandler(userConn, orderConn)
 	router := webapi.CreateRouter(logger, handler)
 	server := http.Server{
-		Addr: appConfig.App.Bind,
-		Handler: otelhttp.NewHandler(router, webapi.TracerNameServer, otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
-			return r.Method + " " + r.URL.Path
-		})),
+		Addr:    appConfig.App.Bind,
+		Handler: webapi.TraceWrapRouter(router),
 	}
 
 	shutdown := make(chan os.Signal, 1)
