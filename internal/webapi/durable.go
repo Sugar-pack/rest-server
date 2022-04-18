@@ -7,7 +7,7 @@ import (
 
 func (h *Handler) Durable(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond) //nolint:revive,gomnd // this is tempprary and should be removed
 	StatusOk(ctx, w, "a long time ago")
 }
 

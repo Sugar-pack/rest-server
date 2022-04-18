@@ -15,15 +15,15 @@ func LoggingMiddleware(logger logging.Logger) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			ctxWithLogger := logging.WithContext(ctx, logger)
-			r.WithContext(ctxWithLogger)
+			r = r.WithContext(ctxWithLogger)
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
 func WithLogRequestBoundaries() func(next http.Handler) http.Handler {
-	handler := func(next http.Handler) http.Handler {
-		mw := func(w http.ResponseWriter, r *http.Request) {
+	httpMw := func(next http.Handler) http.Handler {
+		handlerFn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			logger := logging.FromContext(ctx)
 			requestURI := r.RequestURI
@@ -33,9 +33,9 @@ func WithLogRequestBoundaries() func(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			logger.WithField("request", logRequest).Trace("REQUEST_COMPLETED")
 		}
-		return http.HandlerFunc(mw)
+		return http.HandlerFunc(handlerFn)
 	}
-	return handler
+	return httpMw
 }
 
 type asyncResponseWriter struct {
@@ -59,12 +59,14 @@ func (a *asyncResponseWriter) WriteHeader(statusCode int) {
 	a.code = statusCode
 }
 
+const HTTPHeaderXBackground = "x-background"
+
 func Async(bgResponses map[string][]byte) func(http.Handler) http.Handler {
-	mw := func(next http.Handler) http.Handler {
-		fn := func(w http.ResponseWriter, r *http.Request) {
+	httpMw := func(next http.Handler) http.Handler {
+		handlerFn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			logger := logging.FromContext(ctx)
-			timeout := 100 * time.Millisecond
+			timeout := 100 * time.Millisecond //nolint:revive,gomnd // this is tempprary and should be removed
 			timer := time.NewTimer(timeout)
 			timeNow := time.Now()
 			catchTimeoutCh := make(chan struct{})
@@ -73,27 +75,33 @@ func Async(bgResponses map[string][]byte) func(http.Handler) http.Handler {
 			var buffBytes []byte
 			responseBuffer := bytes.NewBuffer(buffBytes)
 			headers := http.Header{}
-			aw := &asyncResponseWriter{
+			asyncRespWriter := &asyncResponseWriter{
 				id:      rid,
 				storage: bgResponses,
 				buf:     responseBuffer,
 				headers: headers,
 			}
-			go func() {
-				select {
-				case tt := <-timer.C:
-					logger.WithField("timer", tt.Sub(timeNow)).Warn("timeout occurred")
+			hasAsyncHeader := r.Header.Get(HTTPHeaderXBackground)
+			if hasAsyncHeader != "" {
+				go func() {
 					select {
-					case catchTimeoutCh <- struct{}{}:
-					default:
+					case tt := <-timer.C:
+						logger.WithField("timer", tt.Sub(timeNow)).Warn("timeout occurred")
+						select {
+						case catchTimeoutCh <- struct{}{}:
+						default:
+						}
 					}
-				}
-			}()
+				}()
+			} else {
+				logger.Trace("it is sync mode")
+			}
 
 			go func() {
-				next.ServeHTTP(aw, r)
+				next.ServeHTTP(asyncRespWriter, r)
 				select {
 				case catchResponseCh <- struct{}{}:
+					timer.Stop() // timer is not required any more. stop it.
 				default:
 				}
 			}()
@@ -101,11 +109,11 @@ func Async(bgResponses map[string][]byte) func(http.Handler) http.Handler {
 			case <-catchTimeoutCh:
 				StatusAccepted(ctx, w, "request will be executed in the background", rid.String())
 			case <-catchResponseCh:
-				rawResponse(ctx, w, aw.code, aw.headers, aw.buf.Bytes())
+				rawResponse(ctx, w, asyncRespWriter.code, asyncRespWriter.headers, asyncRespWriter.buf.Bytes())
 			}
 		}
-		handlerFn := http.HandlerFunc(fn)
-		return handlerFn
+		httpHandlerFn := http.HandlerFunc(handlerFn)
+		return httpHandlerFn
 	}
-	return mw
+	return httpMw
 }

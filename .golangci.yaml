@@ -152,7 +152,7 @@ linters-settings:
 
   gocognit:
     # minimal code complexity to report, 30 by default (but we recommend 10-20)
-    min-complexity: 20
+    min-complexity: 30
 
   goconst:
     # minimal length of string constant, 3 by default
@@ -697,6 +697,8 @@ linters-settings:
       - e error
       - i int
       - const C
+      - w http.ResponseWriter
+      - r *http.Request
 
   whitespace:
     multi-if: false   # Enforces newlines (or comments) after every multi-line if statement
@@ -724,6 +726,7 @@ linters-settings:
       - github.com/Sugar-pack/users-manager/*
       - github.com/rubenv/sql-migrate
       - database/*
+      - bytes
 
   wsl:
     # See https://github.com/bombsimon/wsl/blob/master/doc/configuration.md for
@@ -784,6 +787,7 @@ linters:
     - unparam
     - wastedassign
     - unused
+    - nlreturn
 #  presets:
 #    - bugs
 #    - unused
