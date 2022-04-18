@@ -15,8 +15,6 @@ func CreateRouter(logger logging.Logger, handler *Handler) *chi.Mux {
 	)
 
 	router.Post("/send", handler.SendMessage)
-	router.Get("/durable", handler.Durable)
-	router.Get("/fast", handler.FastAndFurious)
 	router.Get("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
 	))
