@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/Sugar-pack/users-manager/pkg/logging"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -31,7 +33,9 @@ func main() {
 		return
 	}
 
-	userConn, err := grpc.Dial(appConfig.User.Address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	userConn, err := grpc.Dial(appConfig.User.Address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()))
 	if err != nil {
 		log.Fatal(err)
 
@@ -44,7 +48,9 @@ func main() {
 		}
 	}(userConn)
 
-	orderConn, err := grpc.Dial(appConfig.Order.Address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	orderConn, err := grpc.Dial(appConfig.Order.Address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()))
 	if err != nil {
 		log.Fatal(err)
 
@@ -60,8 +66,10 @@ func main() {
 	handler := webapi.NewHandler(userConn, orderConn)
 	router := webapi.CreateRouter(logger, handler)
 	server := http.Server{
-		Addr:    appConfig.App.Bind,
-		Handler: router,
+		Addr: appConfig.App.Bind,
+		Handler: otelhttp.NewHandler(router, webapi.TracerNameServer, otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+			return r.Method + " " + r.URL.Path
+		})),
 	}
 
 	shutdown := make(chan os.Signal, 1)

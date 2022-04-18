@@ -11,6 +11,12 @@ services:
       - "users_db"
     networks:
       - default
+    environment:
+      - OTEL_SERVICE_NAME=app-service
+      # Found these variables here https://pkg.go.dev/go.opentelemetry.io/otel/exporters/jaeger#section-readme
+      - OTEL_EXPORTER_JAEGER_AGENT_HOST=jaeger-agent
+      - OTEL_EXPORTER_JAEGER_AGENT_PORT=6831
+      - OTEL_EXPORTER_JAEGER_ENDPOINT=http://jaeger-tracing:14268/api/traces
   users_api:
     build: https://github.com/Sugar-pack/users-manager.git#main
     ports:
@@ -19,6 +25,12 @@ services:
       - "users_db"
     networks:
       - default
+    environment:
+      - OTEL_SERVICE_NAME=users-api
+      # Found these variables here https://pkg.go.dev/go.opentelemetry.io/otel/exporters/jaeger#section-readme
+      - OTEL_EXPORTER_JAEGER_AGENT_HOST=jaeger-agent
+      - OTEL_EXPORTER_JAEGER_AGENT_PORT=6831
+      - OTEL_EXPORTER_JAEGER_ENDPOINT=http://jaeger-tracing:14268/api/traces
   users_db:
     image: "postgres:14.2"
     ports:
@@ -53,4 +65,17 @@ services:
       POSTGRES_USER: user_db
       POSTGRES_DB: orders
       POSTGRES_HOST_AUTH_METHOD: trust
+  server-tracing:
+    image: "jaegertracing/all-in-one:1.33"
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "14268:14268"
+      - "9411:9411"
+    networks:
+      - default
+    hostname: jaeger-tracing
 
