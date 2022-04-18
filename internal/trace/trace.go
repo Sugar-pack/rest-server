@@ -1,8 +1,6 @@
 package trace
 
 import (
-	"fmt"
-
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/propagation"
@@ -24,7 +22,7 @@ func newResource() (*resource.Resource, error) {
 		resource.Environment(),
 	)
 
-	return tracingResource, fmt.Errorf("cant create new resource %w", err)
+	return tracingResource, err //nolint:wrapcheck //false positive
 }
 
 func InitJaegerTracing(logger logging.Logger) error {
