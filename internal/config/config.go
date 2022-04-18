@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -15,11 +16,16 @@ type Service struct {
 	Address string `mapstructure:"address"`
 }
 
+type Server struct {
+	ShutdownTimeout time.Duration `mapstructure:"shutdown_timeout"`
+}
+
 // Config is a container for handler config.
 type Config struct {
-	User  *Service `mapstructure:"user_api"`
-	Order *Service `mapstructure:"order_api"`
-	App   *API     `mapstructure:"app_api"`
+	User   *Service `mapstructure:"user_api"`
+	Order  *Service `mapstructure:"order_api"`
+	App    *API     `mapstructure:"app_api"`
+	Server *Server  `mapstructure:"server"`
 }
 
 // GetConfig returns *Config.
