@@ -22,4 +22,4 @@ jobs:
           go-version: ${{ env.GOLANG_VERSION }}
 
       - name: Build
-        run: make build
+        run: make docker-build
