@@ -4,7 +4,7 @@ docker-run:
 
 
 .PHONY: docker-build
-docker-build: vet lint
+docker-build: vet
 	@docker-compose build
 
 .PHONY: docker-up
