@@ -2,8 +2,10 @@ package webapi
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
+	"net/textproto"
 	"time"
 
 	"github.com/Sugar-pack/users-manager/pkg/logging"
@@ -59,36 +61,43 @@ func (a *asyncResponseWriter) WriteHeader(statusCode int) {
 	a.code = statusCode
 }
 
-const HTTPHeaderXBackground = "x-background"
+const (
+	HTTPHeaderXBackground    = "x-background"
+	HTTPHeaderXBackgroundTTL = "x-background-ttl"
+	DefaultTimeout           = 100 * time.Millisecond
+)
+
+func NewAsyncResponseWriter(bgResponses map[string][]byte) *asyncResponseWriter {
+	rid := uuid.New()
+	var buffBytes []byte
+	responseBuffer := bytes.NewBuffer(buffBytes)
+	headers := make(http.Header)
+	return &asyncResponseWriter{
+		id:      rid,
+		storage: bgResponses,
+		buf:     responseBuffer,
+		headers: headers,
+	}
+}
 
 func Async(bgResponses map[string][]byte) func(http.Handler) http.Handler {
 	httpMw := func(next http.Handler) http.Handler {
 		handlerFn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			logger := logging.FromContext(ctx)
-			timeout := 100 * time.Millisecond //nolint:revive,gomnd // this is tempprary and should be removed
-			timer := time.NewTimer(timeout)
-			timeNow := time.Now()
-			catchTimeoutCh := make(chan struct{})
-			catchResponseCh := make(chan struct{})
-			rid := uuid.New()
-			var buffBytes []byte
-			responseBuffer := bytes.NewBuffer(buffBytes)
-			headers := http.Header{}
-			asyncRespWriter := &asyncResponseWriter{
-				id:      rid,
-				storage: bgResponses,
-				buf:     responseBuffer,
-				headers: headers,
-			}
-			hasAsyncHeader := r.Header.Get(HTTPHeaderXBackground)
-			if hasAsyncHeader != "" {
+			catchTimeoutCh := make(chan uuid.UUID)
+			catchResponseCh := make(chan *asyncResponseWriter)
+			asyncRespWriter := NewAsyncResponseWriter(bgResponses)
+			var timer *time.Timer
+			if timeout, ok := hasBackgroundHeader(ctx, r.Header, DefaultTimeout); ok {
+				timer = time.NewTimer(timeout)
+				timeNow := time.Now().UTC()
 				go func() {
 					select {
 					case tt := <-timer.C:
 						logger.WithField("timer", tt.Sub(timeNow)).Warn("timeout occurred")
 						select {
-						case catchTimeoutCh <- struct{}{}:
+						case catchTimeoutCh <- asyncRespWriter.id:
 						default:
 						}
 					}
@@ -100,20 +109,55 @@ func Async(bgResponses map[string][]byte) func(http.Handler) http.Handler {
 			go func() {
 				next.ServeHTTP(asyncRespWriter, r)
 				select {
-				case catchResponseCh <- struct{}{}:
-					timer.Stop() // timer is not required any more. stop it.
+				case catchResponseCh <- asyncRespWriter:
+					if timer != nil {
+						timer.Stop() // timer is not required any more. stop it.
+					}
 				default:
 				}
 			}()
 			select {
-			case <-catchTimeoutCh:
-				StatusAccepted(ctx, w, "request will be executed in the background", rid.String())
-			case <-catchResponseCh:
-				rawResponse(ctx, w, asyncRespWriter.code, asyncRespWriter.headers, asyncRespWriter.buf.Bytes())
+			case backgroundID := <-catchTimeoutCh:
+				StatusAccepted(ctx, w, "request will be executed in the background", backgroundID.String())
+			case syncResponse := <-catchResponseCh:
+				rawResponse(ctx, w, syncResponse.code, syncResponse.headers, syncResponse.buf.Bytes())
 			}
 		}
 		httpHandlerFn := http.HandlerFunc(handlerFn)
 		return httpHandlerFn
 	}
 	return httpMw
+}
+
+func hasBackgroundHeader(ctx context.Context, httpHeader http.Header, defaultTTL time.Duration) (time.Duration, bool) {
+	logger := logging.FromContext(ctx)
+	backgroundHeaders, hasBgHeader := httpHeader[textproto.CanonicalMIMEHeaderKey(HTTPHeaderXBackground)]
+	if !hasBgHeader {
+		logger.Trace("http background header is not passed. it is sync mode")
+		return defaultTTL, false
+	}
+
+	if len(backgroundHeaders) == 0 {
+		logger.Trace("http background header is empty list. it is sync mode")
+		return defaultTTL, false
+	}
+
+	hasAsyncHeader := backgroundHeaders[0]
+	if hasAsyncHeader == "" {
+		logger.Trace("http background header is empty string. it is sync mode")
+		return defaultTTL, false
+	}
+
+	timeout := backgroundTTL(ctx, httpHeader.Get(HTTPHeaderXBackgroundTTL), defaultTTL)
+	return timeout, true
+}
+
+func backgroundTTL(ctx context.Context, rawTTL string, defaultTTL time.Duration) time.Duration {
+	logger := logging.FromContext(ctx)
+	ttl, err := time.ParseDuration(rawTTL)
+	if err != nil {
+		logger.WithError(err).WithField("raw_ttl", rawTTL).Error("parse raw ttl failed, use default value")
+		return defaultTTL
+	}
+	return ttl
 }
