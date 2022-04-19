@@ -1,9 +1,10 @@
 ---
 user_api:
-  address: users_api:8082
+  address: localhost:8082
 order_api:
-  address: orders_api:8081
+  address: localhost:8081
 app_api:
   bind: :8080
+  cache_addr: localhost:16379
 server:
   shutdown_timeout: 5m

@@ -8,6 +8,7 @@ import (
 	"net/textproto"
 	"time"
 
+	"github.com/Sugar-pack/rest-server/internal/responsecache"
 	"github.com/Sugar-pack/users-manager/pkg/logging"
 	"github.com/google/uuid"
 )
@@ -80,7 +81,7 @@ func NewAsyncResponseWriter(bgResponses map[string][]byte) *asyncResponseWriter 
 	}
 }
 
-func Async(bgResponses map[string][]byte) func(http.Handler) http.Handler {
+func AsyncMw(bgResponses map[string][]byte, cacheConn *responsecache.Cache) func(http.Handler) http.Handler {
 	httpMw := func(next http.Handler) http.Handler {
 		handlerFn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
@@ -113,7 +114,18 @@ func Async(bgResponses map[string][]byte) func(http.Handler) http.Handler {
 					if timer != nil {
 						timer.Stop() // timer is not required any more. stop it.
 					}
-				default:
+				default: // if response already sent, then save it in the cache
+					saveCtx := context.Background()
+					lCtx := logging.FromContext(ctx)
+					saveCtx = logging.WithContext(saveCtx, lCtx)
+					saveErr := responsecache.SaveResponse(saveCtx, cacheConn, asyncRespWriter.id.String(), &responsecache.HTTPResponse{
+						Code:    asyncRespWriter.code,
+						Headers: asyncRespWriter.headers,
+						Body:    asyncRespWriter.buf.Bytes(),
+					})
+					if saveErr != nil {
+						logger.WithError(saveErr).Error("save response in cache failed")
+					}
 				}
 			}()
 			select {
@@ -156,7 +168,7 @@ func backgroundTTL(ctx context.Context, rawTTL string, defaultTTL time.Duration)
 	logger := logging.FromContext(ctx)
 	ttl, err := time.ParseDuration(rawTTL)
 	if err != nil {
-		logger.WithError(err).WithField("raw_ttl", rawTTL).Error("parse raw ttl failed, use default value")
+		logger.WithError(err).WithField("raw_ttl", rawTTL).Warn("parse raw ttl failed, use default value")
 		return defaultTTL
 	}
 	return ttl

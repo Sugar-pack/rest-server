@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/Sugar-pack/rest-server/internal/responsecache"
 	"github.com/Sugar-pack/users-manager/pkg/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -61,8 +62,14 @@ func main() {
 		}
 	}(orderConn)
 
+	cacheConn, err := responsecache.NewCache(ctx, responsecache.WithAddr(appConfig.App.CacheAddr))
+	if err != nil {
+		logger.WithError(err).Error("cache connect failed")
+		return
+	}
+
 	handler := webapi.NewHandler(userConn, orderConn)
-	router := webapi.CreateRouter(logger, handler)
+	router := webapi.CreateRouter(logger, handler, cacheConn)
 	server := http.Server{
 		Addr:    appConfig.App.Bind,
 		Handler: router,

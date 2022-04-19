@@ -5,19 +5,24 @@ go 1.18
 require (
 	github.com/Sugar-pack/orders-manager v0.0.0-20220406102857-984a9376ff9d
 	github.com/Sugar-pack/users-manager v0.0.0-20220414130906-fa395abe5b37
+	github.com/agiledragon/gomonkey/v2 v2.2.0
 	github.com/go-chi/chi/v5 v5.0.7
+	github.com/go-redis/redis/v8 v8.11.5
+	github.com/go-redis/redismock/v8 v8.0.6
 	github.com/google/uuid v1.1.2
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.7.1
-	github.com/swaggo/http-swagger v1.2.5
-	github.com/swaggo/swag v1.8.1
+	github.com/swaggo/http-swagger v1.1.2
+	github.com/swaggo/swag v1.7.4
 	google.golang.org/grpc v1.45.0
 	google.golang.org/protobuf v1.28.0
 )
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
