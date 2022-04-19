@@ -22,7 +22,7 @@ func newResource() (*resource.Resource, error) {
 		resource.Environment(),
 	)
 
-	return tracingResource, err //nolint:wrapcheck //false positive
+	return tracingResource, err //nolint:wrapcheck //can be nil
 }
 
 func InitJaegerTracing(logger logging.Logger) error {
