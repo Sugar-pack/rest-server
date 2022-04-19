@@ -2,7 +2,6 @@
 docker-run:
 	@docker-compose up --build -d --remove-orphans
 
-
 .PHONY: docker-build
 docker-build: vet
 	@docker-compose build
