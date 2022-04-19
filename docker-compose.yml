@@ -52,6 +52,12 @@ services:
       - "orders_db"
     networks:
       - default
+    environment:
+      - OTEL_SERVICE_NAME=orders-api
+      # Found these variables here https://pkg.go.dev/go.opentelemetry.io/otel/exporters/jaeger#section-readme
+      - OTEL_EXPORTER_JAEGER_AGENT_HOST=jaeger-agent
+      - OTEL_EXPORTER_JAEGER_AGENT_PORT=6831
+      - OTEL_EXPORTER_JAEGER_ENDPOINT=http://jaeger-tracing:14268/api/traces
   orders_db:
     image: "postgres:14.2"
     ports:
