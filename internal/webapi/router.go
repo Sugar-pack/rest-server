@@ -20,6 +20,7 @@ func CreateRouter(logger logging.Logger, handler *Handler, cacheConn *responseca
 		httpSwagger.URL("/swagger/doc.json"),
 	))
 	router.Get("/durable", handler.Durable)
+	router.Get("/bg-responses/{bg_id}", CachedResponse(cacheConn))
 
 	return router
 }

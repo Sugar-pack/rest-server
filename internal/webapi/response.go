@@ -1,8 +1,10 @@
 package webapi
 
 import (
+	"bytes"
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/Sugar-pack/users-manager/pkg/logging"
 )
@@ -44,6 +46,18 @@ func StatusAccepted(ctx context.Context, writer http.ResponseWriter, s, backgrou
 	if wErr != nil {
 		logger.WithError(wErr).Error(ErrMsgWritingResponse)
 	}
+}
+
+func NotFound(ctx context.Context, w http.ResponseWriter, msg string) {
+	logger := logging.FromContext(ctx)
+	body := strings.NewReader(msg)
+	buff := new(bytes.Buffer)
+	_, err := buff.ReadFrom(body)
+	if err != nil {
+		logger.WithError(err).Error(ErrMsgWritingResponse)
+		return
+	}
+	rawResponse(ctx, w, http.StatusNotFound, nil, buff.Bytes())
 }
 
 func rawResponse(ctx context.Context, w http.ResponseWriter, httpCode int, httpHeaders http.Header, body []byte) {

@@ -100,8 +100,6 @@ func AsyncMw(cacheConn *responsecache.Cache) func(http.Handler) http.Handler {
 						}
 					}
 				}()
-			} else {
-				logger.Trace("it is sync mode")
 			}
 
 			go func() {

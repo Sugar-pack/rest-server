@@ -58,6 +58,12 @@ func SaveResponse(ctx context.Context, c *Cache, k string, resp *HTTPResponse) e
 	return c.Client.Set(ctx, k, resp, noTTL).Err()
 }
 
-func GetResponse(ctx context.Context, c *Cache, k string) ([]byte, error) {
-	return c.Client.Get(ctx, k).Bytes()
+func GetResponse(ctx context.Context, c *Cache, k string) (*HTTPResponse, error) {
+	httpResp := new(HTTPResponse)
+	err := c.Client.Get(ctx, k).Scan(httpResp)
+	return httpResp, err
+}
+
+func DeleteResponse(ctx context.Context, c *Cache, k string) error {
+	return c.Client.Del(ctx, k).Err()
 }

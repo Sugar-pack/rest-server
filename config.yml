@@ -5,6 +5,6 @@ order_api:
   address: localhost:8081
 app_api:
   bind: :8080
-  cache_addr: localhost:16379
+  cache_addr: resp_cache:6379
 server:
   shutdown_timeout: 5m
