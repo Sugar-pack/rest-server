@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/Sugar-pack/rest-server/internal/responsecache"
 	"github.com/Sugar-pack/users-manager/pkg/logging"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/Sugar-pack/rest-server/docs"
 	"github.com/Sugar-pack/rest-server/internal/config"
+	"github.com/Sugar-pack/rest-server/internal/responsecache"
 	"github.com/Sugar-pack/rest-server/internal/webapi"
 )
 

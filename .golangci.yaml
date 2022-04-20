@@ -328,7 +328,7 @@ linters-settings:
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
     # it's a comma-separated list of prefixes
-    local-prefixes: github.com/Sugar-pack/orders-manager
+    local-prefixes: github.com/Sugar-pack/rest-server
 
   golint:
     # minimal confidence for issues, default is 0.8
@@ -727,6 +727,7 @@ linters-settings:
       - github.com/rubenv/sql-migrate
       - database/*
       - bytes
+      - github.com/go-redis/redis/v8
 
   wsl:
     # See https://github.com/bombsimon/wsl/blob/master/doc/configuration.md for

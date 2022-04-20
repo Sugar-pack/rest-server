@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Sugar-pack/rest-server/internal/responsecache"
-	"github.com/Sugar-pack/rest-server/internal/trace"
 	"github.com/Sugar-pack/users-manager/pkg/logging"
 	"github.com/go-chi/chi/v5"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
+	"github.com/Sugar-pack/rest-server/internal/responsecache"
+	"github.com/Sugar-pack/rest-server/internal/trace"
 )
 
-const TracerNameServer = "monitor_server"
+const TracerNameServer = "public-api"
 
 func CreateRouter(logger logging.Logger, handler *Handler, cacheConn *responsecache.Cache) *chi.Mux {
 	err := trace.InitJaegerTracing(logger)

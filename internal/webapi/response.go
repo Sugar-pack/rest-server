@@ -52,8 +52,7 @@ func NotFound(ctx context.Context, w http.ResponseWriter, msg string) {
 	logger := logging.FromContext(ctx)
 	body := strings.NewReader(msg)
 	buff := new(bytes.Buffer)
-	_, err := buff.ReadFrom(body)
-	if err != nil {
+	if _, err := buff.ReadFrom(body); err != nil {
 		logger.WithError(err).Error(ErrMsgWritingResponse)
 		return
 	}

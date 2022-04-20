@@ -8,9 +8,12 @@ import (
 	"net/textproto"
 	"time"
 
-	"github.com/Sugar-pack/rest-server/internal/responsecache"
 	"github.com/Sugar-pack/users-manager/pkg/logging"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/trace"
+
+	"github.com/Sugar-pack/rest-server/internal/responsecache"
 )
 
 func LoggingMiddleware(logger logging.Logger) func(http.Handler) http.Handler {
@@ -78,6 +81,7 @@ func NewAsyncResponseWriter() *asyncResponseWriter {
 	}
 }
 
+//nolint:gocognit,cyclop // need to refactor to decrease cyclo complexity
 func AsyncMw(cacheConn *responsecache.Cache) func(http.Handler) http.Handler {
 	httpMw := func(next http.Handler) http.Handler {
 		handlerFn := func(w http.ResponseWriter, r *http.Request) {
@@ -103,6 +107,13 @@ func AsyncMw(cacheConn *responsecache.Cache) func(http.Handler) http.Handler {
 			}
 
 			go func() {
+				asyncCtx := context.Background()
+				lCtx := logging.FromContext(ctx)
+				asyncCtx = logging.WithContext(asyncCtx, lCtx)
+				newChiCtx := chi.NewRouteContext()
+				r = r.WithContext(context.WithValue(asyncCtx, chi.RouteCtxKey, newChiCtx))
+				span := trace.SpanFromContext(ctx)
+				r = r.WithContext(trace.ContextWithSpan(r.Context(), span))
 				next.ServeHTTP(asyncRespWriter, r)
 				select {
 				case catchResponseCh <- asyncRespWriter:
@@ -110,14 +121,12 @@ func AsyncMw(cacheConn *responsecache.Cache) func(http.Handler) http.Handler {
 						timer.Stop() // timer is not required any more. stop it.
 					}
 				default: // if response already sent, then save real response in the cache
-					saveCtx := context.Background()
-					lCtx := logging.FromContext(ctx)
-					saveCtx = logging.WithContext(saveCtx, lCtx)
-					saveErr := responsecache.SaveResponse(saveCtx, cacheConn, asyncRespWriter.id.String(), &responsecache.HTTPResponse{
-						Code:    asyncRespWriter.code,
-						Headers: asyncRespWriter.headers,
-						Body:    asyncRespWriter.buf.Bytes(),
-					})
+					saveErr := responsecache.SaveResponse(asyncCtx, cacheConn, asyncRespWriter.id.String(),
+						&responsecache.HTTPResponse{
+							Code:    asyncRespWriter.code,
+							Headers: asyncRespWriter.headers,
+							Body:    asyncRespWriter.buf.Bytes(),
+						})
 					if saveErr != nil {
 						logger.WithError(saveErr).Error("save response in cache failed")
 					}
