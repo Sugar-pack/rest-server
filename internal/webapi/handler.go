@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"go.opentelemetry.io/otel"
+
 	userTxPb "github.com/Sugar-pack/users-manager/pkg/generated/distributedtx"
 	userPb "github.com/Sugar-pack/users-manager/pkg/generated/users"
 	"github.com/Sugar-pack/users-manager/pkg/logging"
@@ -52,6 +54,8 @@ type Message struct {
 // @Router       /send [post].
 func (h *Handler) SendMessage(writer http.ResponseWriter, request *http.Request) {
 	ctx := request.Context()
+	ctx, span := otel.Tracer(TracerNameServer).Start(ctx, "send_message")
+	defer span.End()
 	logger := logging.FromContext(ctx)
 	logger.Info("SendMessage")
 
@@ -66,6 +70,7 @@ func (h *Handler) SendMessage(writer http.ResponseWriter, request *http.Request)
 	user := &userPb.NewUser{
 		Name: messageFromReq.Name,
 	}
+
 	createUser, err := h.UserClient.CreateUser(ctx, user)
 	if err != nil {
 		logger.WithError(err).Error("Error while creating user")

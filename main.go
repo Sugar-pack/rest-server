@@ -11,6 +11,7 @@ import (
 
 	"github.com/Sugar-pack/rest-server/internal/responsecache"
 	"github.com/Sugar-pack/users-manager/pkg/logging"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -36,7 +37,9 @@ func main() {
 	docs.SwaggerInfo.Host = appConfig.App.Bind
 	shutdownTime := appConfig.Server.ShutdownTimeout
 
-	userConn, err := grpc.Dial(appConfig.User.Address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	userConn, err := grpc.Dial(appConfig.User.Address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()))
 	if err != nil {
 		log.Fatal(err)
 
@@ -49,7 +52,9 @@ func main() {
 		}
 	}(userConn)
 
-	orderConn, err := grpc.Dial(appConfig.Order.Address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	orderConn, err := grpc.Dial(appConfig.Order.Address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()))
 	if err != nil {
 		log.Fatal(err)
 
@@ -72,7 +77,7 @@ func main() {
 	router := webapi.CreateRouter(logger, handler, cacheConn)
 	server := http.Server{
 		Addr:    appConfig.App.Bind,
-		Handler: router,
+		Handler: webapi.TraceWrapRouter(router),
 	}
 
 	shutdown := make(chan os.Signal, 1)

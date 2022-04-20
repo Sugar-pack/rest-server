@@ -1,13 +1,26 @@
 package webapi
 
 import (
+	"fmt"
+	"net/http"
+
 	"github.com/Sugar-pack/rest-server/internal/responsecache"
+	"github.com/Sugar-pack/rest-server/internal/trace"
 	"github.com/Sugar-pack/users-manager/pkg/logging"
 	"github.com/go-chi/chi/v5"
 	httpSwagger "github.com/swaggo/http-swagger"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
+const TracerNameServer = "monitor_server"
+
 func CreateRouter(logger logging.Logger, handler *Handler, cacheConn *responsecache.Cache) *chi.Mux {
+	err := trace.InitJaegerTracing(logger)
+	if err != nil {
+		logger.WithError(err).Error("failed to init Jaeger Tracing")
+
+		return nil
+	}
 	router := chi.NewRouter()
 	router.Use(
 		LoggingMiddleware(logger),
@@ -23,4 +36,13 @@ func CreateRouter(logger logging.Logger, handler *Handler, cacheConn *responseca
 	router.Get("/bg-responses/{bg_id}", CachedResponse(cacheConn))
 
 	return router
+}
+
+func TraceWrapRouter(router *chi.Mux) http.Handler {
+	return otelhttp.NewHandler(
+		router,
+		TracerNameServer,
+		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+			return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
+		}))
 }

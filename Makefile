@@ -1,7 +1,10 @@
 .PHONY: docker-run
-docker-run: vet lint
-	docker-compose up --build -d --remove-orphans
+docker-run:
+	@docker-compose up --build -d --remove-orphans
 
+.PHONY: docker-build
+docker-build: vet
+	@docker-compose build
 
 .PHONY: docker-up
 docker-up:
