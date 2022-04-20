@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Sugar-pack/users-manager/pkg/logging"
+	"github.com/go-redis/redis/extra/redisotel/v8"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -49,6 +50,7 @@ func NewCache(ctx context.Context, clientOpts ...CacheOption) (*Cache, error) {
 		logger.WithError(err).Error("ping failed")
 		return nil, err
 	}
+	rdb.AddHook(redisotel.NewTracingHook())
 	cache := &Cache{Client: rdb}
 	return cache, nil
 }

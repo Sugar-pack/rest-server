@@ -108,12 +108,12 @@ func AsyncMw(cacheConn *responsecache.Cache) func(http.Handler) http.Handler {
 
 			go func() {
 				asyncCtx := context.Background()
-				lCtx := logging.FromContext(ctx)
-				asyncCtx = logging.WithContext(asyncCtx, lCtx)
-				newChiCtx := chi.NewRouteContext()
-				r = r.WithContext(context.WithValue(asyncCtx, chi.RouteCtxKey, newChiCtx))
+				asyncLogger := logging.FromContext(ctx)
+				asyncCtx = logging.WithContext(asyncCtx, asyncLogger)
+				asyncCtx = context.WithValue(asyncCtx, chi.RouteCtxKey, chi.NewRouteContext())
 				span := trace.SpanFromContext(ctx)
-				r = r.WithContext(trace.ContextWithSpan(r.Context(), span))
+				asyncCtx = trace.ContextWithSpan(asyncCtx, span)
+				r = r.WithContext(asyncCtx)
 				next.ServeHTTP(asyncRespWriter, r)
 				select {
 				case catchResponseCh <- asyncRespWriter:

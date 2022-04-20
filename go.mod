@@ -7,6 +7,7 @@ require (
 	github.com/Sugar-pack/users-manager v0.0.0-20220414130906-fa395abe5b37
 	github.com/agiledragon/gomonkey/v2 v2.3.1
 	github.com/go-chi/chi/v5 v5.0.7
+	github.com/go-redis/redis/extra/redisotel/v8 v8.11.5
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redis/redismock/v8 v8.0.6
 	github.com/google/uuid v1.1.2
@@ -39,6 +40,7 @@ require (
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
 	github.com/go-openapi/spec v0.20.4 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
+	github.com/go-redis/redis/extra/rediscmd/v8 v8.11.5 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
