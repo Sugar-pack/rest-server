@@ -46,7 +46,6 @@ type asyncResponseWriter struct {
 	buf     *bytes.Buffer
 	code    int
 	headers http.Header
-	storage map[string][]byte
 }
 
 func (a *asyncResponseWriter) Header() http.Header {
@@ -54,7 +53,6 @@ func (a *asyncResponseWriter) Header() http.Header {
 }
 
 func (a *asyncResponseWriter) Write(i []byte) (int, error) {
-	a.storage[a.id.String()] = i
 	return a.buf.Write(i)
 }
 
@@ -68,27 +66,26 @@ const (
 	DefaultTimeout           = 100 * time.Millisecond
 )
 
-func NewAsyncResponseWriter(bgResponses map[string][]byte) *asyncResponseWriter {
+func NewAsyncResponseWriter() *asyncResponseWriter {
 	rid := uuid.New()
 	var buffBytes []byte
 	responseBuffer := bytes.NewBuffer(buffBytes)
 	headers := make(http.Header)
 	return &asyncResponseWriter{
 		id:      rid,
-		storage: bgResponses,
 		buf:     responseBuffer,
 		headers: headers,
 	}
 }
 
-func AsyncMw(bgResponses map[string][]byte, cacheConn *responsecache.Cache) func(http.Handler) http.Handler {
+func AsyncMw(cacheConn *responsecache.Cache) func(http.Handler) http.Handler {
 	httpMw := func(next http.Handler) http.Handler {
 		handlerFn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			logger := logging.FromContext(ctx)
 			catchTimeoutCh := make(chan uuid.UUID)
 			catchResponseCh := make(chan *asyncResponseWriter)
-			asyncRespWriter := NewAsyncResponseWriter(bgResponses)
+			asyncRespWriter := NewAsyncResponseWriter()
 			var timer *time.Timer
 			if timeout, ok := hasBackgroundHeader(ctx, r.Header, DefaultTimeout); ok {
 				timer = time.NewTimer(timeout)
@@ -114,7 +111,7 @@ func AsyncMw(bgResponses map[string][]byte, cacheConn *responsecache.Cache) func
 					if timer != nil {
 						timer.Stop() // timer is not required any more. stop it.
 					}
-				default: // if response already sent, then save it in the cache
+				default: // if response already sent, then save real response in the cache
 					saveCtx := context.Background()
 					lCtx := logging.FromContext(ctx)
 					saveCtx = logging.WithContext(saveCtx, lCtx)

@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/Sugar-pack/orders-manager v0.0.0-20220406102857-984a9376ff9d
 	github.com/Sugar-pack/users-manager v0.0.0-20220414130906-fa395abe5b37
-	github.com/agiledragon/gomonkey/v2 v2.2.0
+	github.com/agiledragon/gomonkey/v2 v2.3.1
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redis/redismock/v8 v8.0.6
@@ -13,7 +13,7 @@ require (
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.7.1
 	github.com/swaggo/http-swagger v1.1.2
-	github.com/swaggo/swag v1.7.4
+	github.com/swaggo/swag v1.8.1
 	google.golang.org/grpc v1.45.0
 	google.golang.org/protobuf v1.28.0
 )

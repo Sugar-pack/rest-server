@@ -24,11 +24,11 @@ func TestAsyncMw_HasAsyncHeader_DefaultTTL_InBackground(t *testing.T) {
 	httpHeaders.Add(HTTPHeaderXBackground, "true")
 
 	mockedUUID := uuid.MustParse("ef24471b-e968-40f0-b4d4-c9d0410565c8")
-	gomonkey.ApplyFunc(uuid.New, func() uuid.UUID {
+	patches := gomonkey.ApplyFunc(uuid.New, func() uuid.UUID {
 		return mockedUUID
 	})
+	defer patches.Reset()
 
-	bgResponses := make(map[string][]byte)
 	redisClient, mockedCacheConn := redismock.NewClientMock()
 	cacheConn := &responsecache.Cache{
 		Client: redisClient,
@@ -36,10 +36,10 @@ func TestAsyncMw_HasAsyncHeader_DefaultTTL_InBackground(t *testing.T) {
 	mockedCacheConn.ExpectSet(mockedUUID.String(), &responsecache.HTTPResponse{
 		Code:    http.StatusOK,
 		Headers: make(map[string][]string),
-		Body:    []byte{97, 32, 108, 111, 110, 103, 32, 116, 105, 109, 101, 32, 97, 103, 111},
-	}, time.Duration(0)).SetVal("val")
+		Body:    []byte("a long time ago"),
+	}, time.Duration(0)).SetVal("OK")
 
-	mw := AsyncMw(bgResponses, cacheConn)
+	mw := AsyncMw(cacheConn)
 	fakeHandler := new(backgroundResponse)
 	handlerFn := mw(fakeHandler)
 
@@ -64,10 +64,7 @@ func TestAsyncMw_HasAsyncHeader_DefaultTTL_InBackground(t *testing.T) {
 	assert.NotEmpty(t, gotHeaderBackgroundID)
 
 	<-time.NewTimer(150 * time.Millisecond).C // need to wait till handler completion
-	realResponse, ok := bgResponses[gotHeaderBackgroundID]
-	assert.True(t, ok, "background response must exist")
-	expectedRealResponse := "a long time ago"
-	assert.Equal(t, expectedRealResponse, string(realResponse), "background response must match")
+	assert.NoError(t, mockedCacheConn.ExpectationsWereMet(), "all redis expectations should be met")
 }
 
 type backgroundResponse struct{}
@@ -92,14 +89,12 @@ func TestAsyncMw_HasAsyncHeader_DefaultTTL_ResponseByHandler(t *testing.T) {
 	httpHeaders := make(http.Header)
 	httpHeaders.Add(HTTPHeaderXBackground, "true")
 
-	bgResponses := make(map[string][]byte)
 	redisClient, mockedCacheConn := redismock.NewClientMock()
 	cacheConn := &responsecache.Cache{
 		Client: redisClient,
 	}
-	mockedCacheConn.ExpectSet("", "", time.Duration(0)).RedisNil()
 
-	mw := AsyncMw(bgResponses, cacheConn)
+	mw := AsyncMw(cacheConn)
 	fakeHandler := new(handlerResponse)
 	handlerFn := mw(fakeHandler)
 
@@ -122,6 +117,8 @@ func TestAsyncMw_HasAsyncHeader_DefaultTTL_ResponseByHandler(t *testing.T) {
 
 	gotHeaderBackgroundID := testRecorder.Header().Get("x-background-id")
 	assert.Empty(t, gotHeaderBackgroundID)
+
+	assert.NoError(t, mockedCacheConn.ExpectationsWereMet(), "all redis expectations should be met")
 }
 
 func TestAsync_HasEmptyAsyncHeader(t *testing.T) {
@@ -131,14 +128,12 @@ func TestAsync_HasEmptyAsyncHeader(t *testing.T) {
 	httpHeaders := make(http.Header)
 	httpHeaders.Add(HTTPHeaderXBackground, "")
 
-	bgResponses := make(map[string][]byte)
 	redisClient, mockedCacheConn := redismock.NewClientMock()
 	cacheConn := &responsecache.Cache{
 		Client: redisClient,
 	}
-	mockedCacheConn.ExpectSet("", "", time.Duration(0)).RedisNil()
 
-	mw := AsyncMw(bgResponses, cacheConn)
+	mw := AsyncMw(cacheConn)
 	fakeHandler := new(backgroundResponse)
 	handlerFn := mw(fakeHandler)
 
@@ -161,6 +156,8 @@ func TestAsync_HasEmptyAsyncHeader(t *testing.T) {
 
 	gotHeaderBackgroundID := testRecorder.Header().Get("x-background-id")
 	assert.Empty(t, gotHeaderBackgroundID)
+
+	assert.NoError(t, mockedCacheConn.ExpectationsWereMet(), "all redis expectations should be met")
 }
 
 func TestAsyncMw_HasAsyncHeader_HasTTLHeader(t *testing.T) {
@@ -172,14 +169,24 @@ func TestAsyncMw_HasAsyncHeader_HasTTLHeader(t *testing.T) {
 	requestTTL := 50 * time.Millisecond
 	httpHeaders.Add(HTTPHeaderXBackgroundTTL, requestTTL.String())
 
-	bgResponses := make(map[string][]byte)
+	mockedUUID := uuid.MustParse("ef24471b-e968-40f0-b4d4-c9d0410565c8")
+	patches := gomonkey.ApplyFunc(uuid.New, func() uuid.UUID {
+		return mockedUUID
+	})
+	defer patches.Reset()
+
 	redisClient, mockedCacheConn := redismock.NewClientMock()
 	cacheConn := &responsecache.Cache{
 		Client: redisClient,
 	}
-	mockedCacheConn.ExpectSet("", "", time.Duration(0)).RedisNil()
+	expectedRedisValue := &responsecache.HTTPResponse{
+		Code:    http.StatusOK,
+		Headers: make(map[string][]string),
+		Body:    []byte("a long time ago"),
+	}
+	mockedCacheConn.ExpectSet(mockedUUID.String(), expectedRedisValue, time.Duration(0)).SetVal("OK")
 
-	mw := AsyncMw(bgResponses, cacheConn)
+	mw := AsyncMw(cacheConn)
 	fakeHandler := new(withRequestTTL)
 	handlerFn := mw(fakeHandler)
 
@@ -202,6 +209,9 @@ func TestAsyncMw_HasAsyncHeader_HasTTLHeader(t *testing.T) {
 
 	gotHeaderBackgroundID := testRecorder.Header().Get("x-background-id")
 	assert.NotEmpty(t, gotHeaderBackgroundID)
+
+	<-time.NewTimer(80 * time.Millisecond).C // need to wait till handler completion
+	assert.NoError(t, mockedCacheConn.ExpectationsWereMet(), "all redis expectations should be met")
 }
 
 type withRequestTTL struct{}

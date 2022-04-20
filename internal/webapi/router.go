@@ -12,7 +12,7 @@ func CreateRouter(logger logging.Logger, handler *Handler, cacheConn *responseca
 	router.Use(
 		LoggingMiddleware(logger),
 		WithLogRequestBoundaries(),
-		AsyncMw(handler.BgResponses, cacheConn),
+		AsyncMw(cacheConn),
 	)
 
 	router.Post("/send", handler.SendMessage)

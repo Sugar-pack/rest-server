@@ -18,7 +18,6 @@ type Handler struct {
 	UserTxClient  userTxPb.DistributedTxServiceClient
 	OrderClient   orderPb.OrdersManagerServiceClient
 	OrderTxClient orderPb.TnxConfirmingServiceClient
-	BgResponses   map[string][]byte
 }
 
 func NewHandler(userConn *grpc.ClientConn, orderConn *grpc.ClientConn) *Handler {
@@ -26,14 +25,12 @@ func NewHandler(userConn *grpc.ClientConn, orderConn *grpc.ClientConn) *Handler 
 	userTxClient := userTxPb.NewDistributedTxServiceClient(userConn)
 	orderClient := orderPb.NewOrdersManagerServiceClient(orderConn)
 	orderTxClient := orderPb.NewTnxConfirmingServiceClient(orderConn)
-	bgResponses := make(map[string][]byte)
 
 	return &Handler{
 		UserClient:    userClient,
 		UserTxClient:  userTxClient,
 		OrderClient:   orderClient,
 		OrderTxClient: orderTxClient,
-		BgResponses:   bgResponses,
 	}
 }
 
