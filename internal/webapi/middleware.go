@@ -11,6 +11,7 @@ import (
 	"github.com/Sugar-pack/users-manager/pkg/logging"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/Sugar-pack/rest-server/internal/responsecache"
@@ -111,7 +112,8 @@ func AsyncMw(cacheConn *responsecache.Cache) func(http.Handler) http.Handler {
 				asyncLogger := logging.FromContext(ctx)
 				asyncCtx = logging.WithContext(asyncCtx, asyncLogger)
 				asyncCtx = context.WithValue(asyncCtx, chi.RouteCtxKey, chi.NewRouteContext())
-				span := trace.SpanFromContext(ctx)
+				_, span := otel.Tracer(TracerNameServer).Start(ctx, "detached span")
+				defer span.End()
 				asyncCtx = trace.ContextWithSpan(asyncCtx, span)
 				r = r.WithContext(asyncCtx)
 				next.ServeHTTP(asyncRespWriter, r)

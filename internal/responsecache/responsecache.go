@@ -45,8 +45,7 @@ func NewCache(ctx context.Context, clientOpts ...CacheOption) (*Cache, error) {
 		funcOpt(redisOpts)
 	}
 	rdb := redis.NewClient(redisOpts)
-	err := rdb.Ping(ctx).Err()
-	if err != nil {
+	if err := rdb.Ping(ctx).Err(); err != nil {
 		logger.WithError(err).Error("ping failed")
 		return nil, err
 	}
