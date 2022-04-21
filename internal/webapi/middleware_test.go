@@ -8,12 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Sugar-pack/rest-server/internal/responsecache"
 	"github.com/Sugar-pack/users-manager/pkg/logging"
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/go-redis/redismock/v8"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Sugar-pack/rest-server/internal/responsecache"
 )
 
 func TestAsyncMw_HasAsyncHeader_DefaultTTL_InBackground(t *testing.T) {

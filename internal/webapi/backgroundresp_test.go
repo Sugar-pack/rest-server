@@ -8,11 +8,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Sugar-pack/rest-server/internal/responsecache"
 	"github.com/Sugar-pack/users-manager/pkg/logging"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-redis/redismock/v8"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Sugar-pack/rest-server/internal/responsecache"
 )
 
 func TestCachedResponse_OK(t *testing.T) {
