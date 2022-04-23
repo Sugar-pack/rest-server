@@ -15,3 +15,6 @@ vet:  ## Run go vet
 
 lint: ## Run go lint
 	golangci-lint run
+
+test:
+	go test -gcflags "all=-l" -race -count 1 -cover ./...

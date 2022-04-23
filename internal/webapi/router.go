@@ -6,14 +6,16 @@ import (
 
 	"github.com/Sugar-pack/users-manager/pkg/logging"
 	"github.com/go-chi/chi/v5"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
+	"github.com/Sugar-pack/rest-server/internal/responsecache"
 	"github.com/Sugar-pack/rest-server/internal/trace"
 )
 
-const TracerNameServer = "monitor_server"
+const TracerNameServer = "public-api"
 
-func CreateRouter(logger logging.Logger, handler *Handler) *chi.Mux {
+func CreateRouter(logger logging.Logger, handler *Handler, cacheConn *responsecache.Cache) *chi.Mux {
 	err := trace.InitJaegerTracing(logger)
 	if err != nil {
 		logger.WithError(err).Error("failed to init Jaeger Tracing")
@@ -21,8 +23,17 @@ func CreateRouter(logger logging.Logger, handler *Handler) *chi.Mux {
 		return nil
 	}
 	router := chi.NewRouter()
-	router.Use(LoggingMiddleware(logger))
+	router.Use(
+		LoggingMiddleware(logger),
+		WithLogRequestBoundaries(),
+		AsyncMw(cacheConn),
+	)
+
 	router.Post("/send", handler.SendMessage)
+	router.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
+	router.Get("/bg-responses/{bg_id}", CachedResponse(cacheConn))
 
 	return router
 }

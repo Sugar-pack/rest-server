@@ -9,7 +9,8 @@ import (
 
 // API contains api settings.
 type API struct {
-	Bind string `mapstructure:"bind"`
+	Bind      string `mapstructure:"bind"`
+	CacheAddr string `mapstructure:"cache_addr"`
 }
 
 type Service struct {

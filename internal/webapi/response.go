@@ -1,18 +1,22 @@
 package webapi
 
 import (
+	"bytes"
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/Sugar-pack/users-manager/pkg/logging"
 )
+
+const ErrMsgWritingResponse = "Error while writing response"
 
 func BadRequest(ctx context.Context, writer http.ResponseWriter, msg string) {
 	logger := logging.FromContext(ctx)
 	writer.WriteHeader(http.StatusBadRequest)
 	_, wErr := writer.Write([]byte(msg))
 	if wErr != nil {
-		logger.WithError(wErr).Error("Error while writing response")
+		logger.WithError(wErr).Error(ErrMsgWritingResponse)
 	}
 }
 
@@ -21,7 +25,7 @@ func InternalError(ctx context.Context, writer http.ResponseWriter, s string) {
 	writer.WriteHeader(http.StatusInternalServerError)
 	_, wErr := writer.Write([]byte(s))
 	if wErr != nil {
-		logger.WithError(wErr).Error("Error while writing response")
+		logger.WithError(wErr).Error(ErrMsgWritingResponse)
 	}
 }
 
@@ -30,6 +34,40 @@ func StatusOk(ctx context.Context, writer http.ResponseWriter, s string) {
 	writer.WriteHeader(http.StatusOK)
 	_, wErr := writer.Write([]byte(s))
 	if wErr != nil {
-		logger.WithError(wErr).Error("Error while writing response")
+		logger.WithError(wErr).Error(ErrMsgWritingResponse)
+	}
+}
+
+func StatusAccepted(ctx context.Context, writer http.ResponseWriter, s, backgroundID string) {
+	logger := logging.FromContext(ctx)
+	writer.Header().Add("x-background-id", backgroundID)
+	writer.WriteHeader(http.StatusAccepted)
+	_, wErr := writer.Write([]byte(s))
+	if wErr != nil {
+		logger.WithError(wErr).Error(ErrMsgWritingResponse)
+	}
+}
+
+func NotFound(ctx context.Context, w http.ResponseWriter, msg string) {
+	logger := logging.FromContext(ctx)
+	body := strings.NewReader(msg)
+	buff := new(bytes.Buffer)
+	if _, err := buff.ReadFrom(body); err != nil {
+		logger.WithError(err).Error(ErrMsgWritingResponse)
+		return
+	}
+	rawResponse(ctx, w, http.StatusNotFound, nil, buff.Bytes())
+}
+
+func rawResponse(ctx context.Context, w http.ResponseWriter, httpCode int, httpHeaders http.Header, body []byte) {
+	logger := logging.FromContext(ctx)
+	for k, vs := range httpHeaders {
+		for _, v := range vs {
+			w.Header().Add(k, v)
+		}
+	}
+	w.WriteHeader(httpCode)
+	if _, wErr := w.Write(body); wErr != nil {
+		logger.WithError(wErr).Error(ErrMsgWritingResponse)
 	}
 }

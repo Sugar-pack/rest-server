@@ -16,6 +16,7 @@ import (
 
 	"github.com/Sugar-pack/rest-server/docs"
 	"github.com/Sugar-pack/rest-server/internal/config"
+	"github.com/Sugar-pack/rest-server/internal/responsecache"
 	"github.com/Sugar-pack/rest-server/internal/webapi"
 )
 
@@ -66,8 +67,14 @@ func main() {
 		}
 	}(orderConn)
 
+	cacheConn, err := responsecache.NewCache(ctx, responsecache.WithAddr(appConfig.App.CacheAddr))
+	if err != nil {
+		logger.WithError(err).Error("cache connect failed")
+		return
+	}
+
 	handler := webapi.NewHandler(userConn, orderConn)
-	router := webapi.CreateRouter(logger, handler)
+	router := webapi.CreateRouter(logger, handler, cacheConn)
 	server := http.Server{
 		Addr:    appConfig.App.Bind,
 		Handler: webapi.TraceWrapRouter(router),
